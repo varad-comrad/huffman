@@ -73,7 +73,7 @@ struct HuffmanEncoder{
     ~HuffmanEncoder() {
         // Delete tree
         if(root == nullptr) return;
-
+        else delete_node(root);
     }
 
     bool code_emplacing(){
@@ -103,9 +103,6 @@ struct HuffmanEncoder{
 
     }
 
-    void show_content(NodeHuffman *node) const{
-
-    }
 
     string query(char c, NodeHuffman* current) const{
         if(current == nullptr) return "\0";
@@ -154,6 +151,7 @@ struct HuffmanEncoder{
         writer.open(filepath);
         if(!writer) 
             throw runtime_error("Could not write file");
+            serialize_pre_order(root, writer);
         
         writer.close();
         writer.open(filepath2);
@@ -163,13 +161,34 @@ struct HuffmanEncoder{
         writer.close();
     }
 
-    void serialize_node(NodeHuffman* node, string filepath) const{
-        ofstream writer;
-        writer.open(filepath);
-        if (!writer) throw runtime_error("Could not write file");
-        writer << node-> code << " " << node-> c << " " << node->freq << "\n";
-        writer.close();
-    }
+    private:
+        
+        void show_table_single_node(NodeHuffman *node) const{
+
+        }
+
+        void serialize_node(NodeHuffman* node, ofstream& writer) const{
+            writer << node-> code << " " << node-> c << " " << node->freq << "\n";
+            writer.close();
+        }
+
+        void serialize_pre_order(NodeHuffman* node, ofstream& writer) const{
+            serialize_node(node, writer);
+            if(node->left != nullptr) serialize_pre_order(node->left, writer);
+            if(node->right != nullptr) serialize_pre_order(node->right, writer);
+        }
+
+        void serialize_sym_order(NodeHuffman* node, ofstream& writer) const{
+            if(node->left != nullptr) serialize_sym_order(node->left, writer);
+            serialize_node(node, writer);
+            if(node->right != nullptr) serialize_sym_order(node->right, writer);
+        }
+
+        void delete_node(NodeHuffman* node){
+            if(node->left !=nullptr) delete_node(node->left);
+            if(node->right !=nullptr) delete_node(node->right);
+            delete node;
+        }
 
 };
 

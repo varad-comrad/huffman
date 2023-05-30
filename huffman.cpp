@@ -49,12 +49,35 @@ struct HuffmanEncoder{
             NodeHuffman* second = q.top(); q.pop();
             NodeHuffman* aux = new NodeHuffman(first->freq+second->freq, '\0');
             aux->left = first; aux->right = second;
-            
             q.push(aux);
         }
         if(!code_emplacing()) throw runtime_error("Could not code Huffman tree nodes");
     }
+    HuffmanEncoder(string pre, string sym,string message): message(message){
+        root=SetTree(pre,sym,0,pre.size());
+    }
+    NodeHuffman* SetTree(string pre,string sym,int inicial,int final){
+        static int preIndex=0;
+        if(inicial>final)
+            return nullptr;
+        
+        char actual=pre[preIndex++];
+        NodeHuffman *node = (actual==(char)1? new NodeHuffman(0,'\0') : new NodeHuffman(0,actual));
 
+        if(inicial==final)
+            return node;
+
+        int SymIndex;
+        for(int i=0;i<pre.size();i++){
+            if(sym[i]==pre[preIndex-1]){
+                SymIndex=i;
+                break;
+            }
+        }
+        node->left=SetTree(pre,sym,inicial,SymIndex-1);
+        node->right=SetTree(pre,sym,SymIndex+1,final);
+        return node;
+    }
     HuffmanEncoder(HuffmanEncoder& other): root(other.root), message(other.message) {
         other.root = nullptr;
     }
@@ -199,6 +222,8 @@ struct HuffmanPreprocessor{
 
     HuffmanPreprocessor(string content) : buffer(content), frequencies(get_frequencies()) {}
 
+    HuffmanPreprocessor(vector<pair<char,int>> freq) : buffer(""), frequencies(get_frequencies_decoder(freq)) {}
+
     priority_queue<NodeHuffman *, vector<NodeHuffman *>, Compare> get_frequencies(){
         priority_queue<NodeHuffman*, vector<NodeHuffman*>, Compare> pq;
         map<char,size_t> counter;
@@ -211,6 +236,13 @@ struct HuffmanPreprocessor{
         return pq;
     }
 
+    priority_queue<NodeHuffman *, vector<NodeHuffman *>, Compare> get_frequencies_decoder(vector <pair<char,int>> freq){
+        priority_queue<NodeHuffman*, vector<NodeHuffman*>, Compare> pq;
+        for (auto x: freq){
+            pq.push(new NodeHuffman(x.second, x.first));
+        }
+        return pq;
+    }
 };
 
 
@@ -237,15 +269,30 @@ struct HuffmanDecoder{
     string filepath;
     string pre_order_filepath;
     string symetric_order_filepath;
+    string freq_filepath;
+    vector<pair<char,int>> freq_filepath;
     HuffmanEncoder enc;
 
     HuffmanDecoder(HuffmanEncoder enc, string filepath): enc(enc), filepath(filepath){}
     HuffmanDecoder(string pre, string sym, string filepath): filepath(filepath), pre_order_filepath(pre), symetric_order_filepath(sym) {
         enc = generate_tree(pre, sym);
     }
+    HuffmanDecoder(string freq, string filepath): freq_filepath(freq),filepath(filepath){
+        enc = generate_tree(freq);
+    }
 
-    HuffmanEncoder generate_tree(string pre, string sym){
+    HuffmanEncoder& generate_tree(string preo, string syme){
+        //open pre e sym
+        string pre;
+        string sym;
+        return HuffmanEncoder(pre,sym,"");
+    }
 
+    HuffmanEncoder& generate_tree(string freq){
+        //open freq/ salva no vector
+        vector <pair<char,int>> vec;
+        HuffmanPreprocessor pre_huff(vec);
+        return HuffmanEncoder(pre_huff.frequencies,"");
     }
 
     void decode_message(){
@@ -257,6 +304,15 @@ struct HuffmanDecoder{
     }
 };
 
+
+/*
+arquivo so com 0001110001010
+atraves da ordem remonta o grafo de letras 
+
+
+
+
+*/
 
 
 int main(){

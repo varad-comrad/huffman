@@ -248,8 +248,6 @@ struct HuffmanDecoder{
     string filepath;
     string freq_filepath;
     map <char,int> freq_map;
-    string message;
-    string message_filepath;
     HuffmanEncoder enc;
 
     HuffmanDecoder(HuffmanEncoder enc, string filepath): enc(enc), filepath(filepath){}
@@ -275,10 +273,10 @@ struct HuffmanDecoder{
         enc=HuffmanEncoder(pre_huff.frequencies);
     }
 
-    void decoder(){
+    void decoder(string messagepath){
         ifstream reader(filepath);
         ofstream writer;
-        writer.open("message.txt",ios::out);
+        writer.open(messagepath,ios::out);
         if(!writer.is_open()){
             throw runtime_error("nao foi possivel abrir o arquivo");
         }
@@ -325,6 +323,6 @@ int main(){
     beta.encode_message("zenofpython.txt");
     beta.serialize_tree("tree.txt");
     HuffmanDecoder a("tree.txt","zenofpython.txt");
-    a.decoder();
+    a.decoder("messagem.txt");
     return 0;
 }

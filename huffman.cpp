@@ -201,7 +201,7 @@ struct HuffmanPreprocessor{
 
     HuffmanPreprocessor(string content) : buffer(content), frequencies(get_frequencies()) {}
 
-    HuffmanPreprocessor(vector<pair<char,int>> freq) : buffer(""), frequencies(get_frequencies_decoder(freq)) {}
+    HuffmanPreprocessor(map <char,int> freq) : buffer(""), frequencies(get_frequencies_decoder(freq)) {}
 
     priority_queue<NodeHuffman *, vector<NodeHuffman *>, Compare> get_frequencies(){
         priority_queue<NodeHuffman*, vector<NodeHuffman*>, Compare> pq;
@@ -215,7 +215,7 @@ struct HuffmanPreprocessor{
         return pq;
     }
 
-    priority_queue<NodeHuffman *, vector<NodeHuffman *>, Compare> get_frequencies_decoder(vector <pair<char,int>> freq){
+    priority_queue<NodeHuffman *, vector<NodeHuffman *>, Compare> get_frequencies_decoder(map <char,int> freq){
         priority_queue<NodeHuffman*, vector<NodeHuffman*>, Compare> pq;
         for (auto x: freq){
             pq.push(new NodeHuffman(x.second, x.first));
@@ -247,7 +247,7 @@ size_t getsizeof(HuffmanEncoder& enc){
 struct HuffmanDecoder{
     string filepath;
     string freq_filepath;
-    vector<pair<char,int>> freq_vec;
+    map <char,int> freq_map;
     string message;
     string message_filepath;
     HuffmanEncoder *enc;
@@ -264,17 +264,14 @@ struct HuffmanDecoder{
                 arqfreq>>n;
                 arqfreq.get(e);
                 if(arqfreq.eof()) break;
-                freq_vec.push_back({c,n});
-                // cout<<c<<"-"<<n<<endl;
+                freq_map[c]=n;
             }
             arqfreq.close();
         }
         else{
             throw runtime_error("nao foi possivel abrir o arquivo");
         }
-        // for(auto x:freq_vec)cout<<x.first<<"  "<<x.second<<endl;
-        //open freq/ salva no vector
-        HuffmanPreprocessor pre_huff(freq_vec);
+        HuffmanPreprocessor pre_huff(freq_map);
         enc= new HuffmanEncoder(pre_huff.frequencies);
     }
 
@@ -296,16 +293,12 @@ struct HuffmanDecoder{
         aux=root;
         int index=0;
         string::iterator it=line.begin();
-        // cout<<line<<endl;
         while(it!=line.end()){
-            // cout<<aux->c<<"--";
             if(aux->c!='\0'){
-                // cout<<endl;
                 writer<<aux->c;
                 aux=root;
                 continue;
             }
-            // cout<<*it;
             if(*it=='0') aux=aux->left;
             else aux=aux->right;
             it++;
@@ -326,10 +319,7 @@ atraves da ordem remonta o grafo de letras
 
 
 int main(){
-    // string s = "The Zen of Python, by Tim Peters\n\nBeautiful is better than ugly.\nExplicit is better than implicit.\nSimple is better than complex.\nComplex is better than complicated.\nFlat is better than nested.\nSparse is better than dense.\nReadability counts.\nSpecial cases aren't special enough to break the rules.\n Although practicality beats purity.\nErrors should never pass silently.\nUnless explicitly silenced.\nIn the face of ambiguity, refuse the temptation to guess.\nThere should be one-- and preferably only one-- obvious way to do it.\nAlthough that way may not be obvious at first unless you're Dutch.\n Now is better than never.\nAlthough never is often better than * right * now.\nIf the implementation is hard to explain, it's a bad idea.\n If the implementation is easy to explain, it may be a good idea.\nNamespaces are one honking great idea-- let's do more of those!"; 
-    // string s="aaaababbcd d d d";
-    string s="abcdcdd eefd";
-    cout<<s<<endl;
+    string s = "The Zen of Python, by Tim Peters\n\nBeautiful is better than ugly.\nExplicit is better than implicit.\nSimple is better than complex.\nComplex is better than complicated.\nFlat is better than nested.\nSparse is better than dense.\nReadability counts.\nSpecial cases aren't special enough to break the rules.\n Although practicality beats purity.\nErrors should never pass silently.\nUnless explicitly silenced.\nIn the face of ambiguity, refuse the temptation to guess.\nThere should be one-- and preferably only one-- obvious way to do it.\nAlthough that way may not be obvious at first unless you're Dutch.\n Now is better than never.\nAlthough never is often better than * right * now.\nIf the implementation is hard to explain, it's a bad idea.\n If the implementation is easy to explain, it may be a good idea.\nNamespaces are one honking great idea-- let's do more of those!"; 
     HuffmanPreprocessor alfa(s);
     HuffmanEncoder beta(alfa.frequencies, s);
     beta.encode_message("zenofpython.txt");

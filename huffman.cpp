@@ -250,9 +250,9 @@ struct HuffmanDecoder{
     map <char,int> freq_map;
     string message;
     string message_filepath;
-    HuffmanEncoder *enc;
+    HuffmanEncoder enc;
 
-    HuffmanDecoder(HuffmanEncoder *enc, string filepath): enc(enc), filepath(filepath){}
+    HuffmanDecoder(HuffmanEncoder enc, string filepath): enc(enc), filepath(filepath){}
 
     HuffmanDecoder(string freq, string filepath): freq_filepath(freq),filepath(filepath){
         ifstream arqfreq(freq);
@@ -272,7 +272,7 @@ struct HuffmanDecoder{
             throw runtime_error("nao foi possivel abrir o arquivo");
         }
         HuffmanPreprocessor pre_huff(freq_map);
-        enc= new HuffmanEncoder(pre_huff.frequencies);
+        enc=HuffmanEncoder(pre_huff.frequencies);
     }
 
     void decoder(){
@@ -289,7 +289,7 @@ struct HuffmanDecoder{
         else{
             throw runtime_error("nao foi possivel abrir o arquivo");
         }
-        NodeHuffman *root=enc->get_root(),*aux;
+        NodeHuffman *root=enc.get_root(),*aux;
         aux=root;
         int index=0;
         string::iterator it=line.begin();

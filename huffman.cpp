@@ -63,11 +63,13 @@ struct HuffmanEncoder{
         root = other.root; 
         message = other.message;
         other.root = nullptr;
+        return *this;
     }
     HuffmanEncoder& operator=(HuffmanEncoder&& other) {
         root = other.root;
         message = other.message;
         other.root = nullptr;
+        return *this;
     }
 
     ~HuffmanEncoder() {

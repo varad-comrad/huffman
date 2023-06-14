@@ -5,6 +5,7 @@
 #include <queue>
 #include <map>
 #include <fstream>
+#include<sstream>
 
 using namespace std;
 
@@ -36,7 +37,7 @@ struct HuffmanEncoder{
     NodeHuffman* root;
     string message;
     HuffmanEncoder(): root(nullptr), message("") {}
-    HuffmanEncoder(priority_queue<NodeHuffman *, vector<NodeHuffman *>, Compare> &q, string message): message(message){
+    HuffmanEncoder(priority_queue<NodeHuffman *, vector<NodeHuffman *>, Compare> &q, string message=""): message(message){
         // if(q.size() == 0) throw runtime_error("queue is empty");
         if(q.size() == 1) throw runtime_error("pointless use of Huffman algorithm");
         while(!q.empty()){
@@ -53,31 +54,7 @@ struct HuffmanEncoder{
         }
         if(!code_emplacing()) throw runtime_error("Could not code Huffman tree nodes");
     }
-    HuffmanEncoder(string pre, string sym,string message): message(message){
-        root=SetTree(pre,sym,0,pre.size());
-    }
-    NodeHuffman* SetTree(string pre,string sym,int inicial,int final){
-        static int preIndex=0;
-        if(inicial>final)
-            return nullptr;
-        
-        char actual=pre[preIndex++];
-        NodeHuffman *node = (actual==(char)1? new NodeHuffman(0,'\0') : new NodeHuffman(0,actual));
-
-        if(inicial==final)
-            return node;
-
-        int SymIndex;
-        for(int i=0;i<pre.size();i++){
-            if(sym[i]==pre[preIndex-1]){
-                SymIndex=i;
-                break;
-            }
-        }
-        node->left=SetTree(pre,sym,inicial,SymIndex-1);
-        node->right=SetTree(pre,sym,SymIndex+1,final);
-        return node;
-    }
+    
     HuffmanEncoder(HuffmanEncoder& other): root(other.root), message(other.message) {
         other.root = nullptr;
     }
@@ -126,6 +103,9 @@ struct HuffmanEncoder{
 
     }
 
+    NodeHuffman* get_root(){
+        return root;
+    }
 
     string query(char c, NodeHuffman* current) const{
         if(current == nullptr) return "\0";
@@ -169,19 +149,18 @@ struct HuffmanEncoder{
         return aux;
     }
 
-    void serialize_tree(string filepath, string filepath2) const{
+    void serialize_tree(string filepath) const{
         ofstream writer;
-        writer.open(filepath);
+        writer.open(filepath,ios::out);
         if(!writer) 
             throw runtime_error("Could not write file");
-            serialize_pre_order(root, writer);
-        
+        serialize_pre_order(root, writer);
         writer.close();
-        writer.open(filepath2);
-        if(!writer)
-            throw runtime_error("Could not write file");
+        // writer.open(filepath2);
+        // if(!writer)
+        //     throw runtime_error("Could not write file");
 
-        writer.close();
+        // writer.close();
     }
 
     private:
@@ -191,8 +170,8 @@ struct HuffmanEncoder{
         }
 
         void serialize_node(NodeHuffman* node, ofstream& writer) const{
-            writer << node-> code << " " << node-> c << " " << node->freq << "\n";
-            writer.close();
+            if(node->c=='\0') return;
+            writer << node-> c << " " << node->freq << "\n";
         }
 
         void serialize_pre_order(NodeHuffman* node, ofstream& writer) const{
@@ -222,7 +201,7 @@ struct HuffmanPreprocessor{
 
     HuffmanPreprocessor(string content) : buffer(content), frequencies(get_frequencies()) {}
 
-    HuffmanPreprocessor(vector<pair<char,int>> freq) : buffer(""), frequencies(get_frequencies_decoder(freq)) {}
+    HuffmanPreprocessor(map <char,int> freq) : buffer(""), frequencies(get_frequencies_decoder(freq)) {}
 
     priority_queue<NodeHuffman *, vector<NodeHuffman *>, Compare> get_frequencies(){
         priority_queue<NodeHuffman*, vector<NodeHuffman*>, Compare> pq;
@@ -236,7 +215,7 @@ struct HuffmanPreprocessor{
         return pq;
     }
 
-    priority_queue<NodeHuffman *, vector<NodeHuffman *>, Compare> get_frequencies_decoder(vector <pair<char,int>> freq){
+    priority_queue<NodeHuffman *, vector<NodeHuffman *>, Compare> get_frequencies_decoder(map <char,int> freq){
         priority_queue<NodeHuffman*, vector<NodeHuffman*>, Compare> pq;
         for (auto x: freq){
             pq.push(new NodeHuffman(x.second, x.first));
@@ -267,40 +246,62 @@ size_t getsizeof(HuffmanEncoder& enc){
 
 struct HuffmanDecoder{
     string filepath;
-    string pre_order_filepath;
-    string symetric_order_filepath;
     string freq_filepath;
-    vector<pair<char,int>> freq_filepath;
+    map <char,int> freq_map;
     HuffmanEncoder enc;
 
     HuffmanDecoder(HuffmanEncoder enc, string filepath): enc(enc), filepath(filepath){}
-    HuffmanDecoder(string pre, string sym, string filepath): filepath(filepath), pre_order_filepath(pre), symetric_order_filepath(sym) {
-        enc = generate_tree(pre, sym);
-    }
+
     HuffmanDecoder(string freq, string filepath): freq_filepath(freq),filepath(filepath){
-        enc = generate_tree(freq);
+        ifstream arqfreq(freq);
+        if(arqfreq.is_open()){
+            char c,e;
+            int n;
+            while(1){
+                arqfreq.get(c);
+                arqfreq>>n;
+                arqfreq.get(e);
+                if(arqfreq.eof()) break;
+                freq_map[c]=n;
+            }
+            arqfreq.close();
+        }
+        else{
+            throw runtime_error("nao foi possivel abrir o arquivo");
+        }
+        HuffmanPreprocessor pre_huff(freq_map);
+        enc=HuffmanEncoder(pre_huff.frequencies);
     }
 
-    HuffmanEncoder& generate_tree(string preo, string syme){
-        //open pre e sym
-        string pre;
-        string sym;
-        return HuffmanEncoder(pre,sym,"");
-    }
-
-    HuffmanEncoder& generate_tree(string freq){
-        //open freq/ salva no vector
-        vector <pair<char,int>> vec;
-        HuffmanPreprocessor pre_huff(vec);
-        return HuffmanEncoder(pre_huff.frequencies,"");
-    }
-
-    void decode_message(){
-        ifstream reader;
-        reader.open(filepath, ios::binary);
-        if(!reader) throw runtime_error("Could not found file");
-        // reader.read()
-        reader.close();
+    void decoder(string messagepath){
+        ifstream reader(filepath);
+        ofstream writer;
+        writer.open(messagepath,ios::out);
+        if(!writer.is_open()){
+            throw runtime_error("nao foi possivel abrir o arquivo");
+        }
+        string line;
+        if(reader.is_open()){
+            getline(reader,line);
+        }
+        else{
+            throw runtime_error("nao foi possivel abrir o arquivo");
+        }
+        NodeHuffman *root=enc.get_root(),*aux;
+        aux=root;
+        int index=0;
+        string::iterator it=line.begin();
+        while(it!=line.end()){
+            if(aux->c!='\0'){
+                writer<<aux->c;
+                aux=root;
+                continue;
+            }
+            if(*it=='0') aux=aux->left;
+            else aux=aux->right;
+            it++;
+        }
+        writer<<aux->c;
     }
 };
 
@@ -319,6 +320,9 @@ int main(){
     string s = "The Zen of Python, by Tim Peters\n\nBeautiful is better than ugly.\nExplicit is better than implicit.\nSimple is better than complex.\nComplex is better than complicated.\nFlat is better than nested.\nSparse is better than dense.\nReadability counts.\nSpecial cases aren't special enough to break the rules.\n Although practicality beats purity.\nErrors should never pass silently.\nUnless explicitly silenced.\nIn the face of ambiguity, refuse the temptation to guess.\nThere should be one-- and preferably only one-- obvious way to do it.\nAlthough that way may not be obvious at first unless you're Dutch.\n Now is better than never.\nAlthough never is often better than * right * now.\nIf the implementation is hard to explain, it's a bad idea.\n If the implementation is easy to explain, it may be a good idea.\nNamespaces are one honking great idea-- let's do more of those!"; 
     HuffmanPreprocessor alfa(s);
     HuffmanEncoder beta(alfa.frequencies, s);
-    beta.encode_message("zenofpython.bin");
+    beta.encode_message("zenofpython.txt");
+    beta.serialize_tree("tree.txt");
+    HuffmanDecoder a("tree.txt","zenofpython.txt");
+    a.decoder("messagem.txt");
     return 0;
 }

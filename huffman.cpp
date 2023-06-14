@@ -5,7 +5,6 @@
 #include <queue>
 #include <map>
 #include <fstream>
-#include<sstream>
 
 using namespace std;
 
@@ -38,7 +37,7 @@ struct HuffmanEncoder{
     string message;
     HuffmanEncoder(): root(nullptr), message("") {}
     HuffmanEncoder(priority_queue<NodeHuffman *, vector<NodeHuffman *>, Compare> &q, string message=""): message(message){
-        // if(q.size() == 0) throw runtime_error("queue is empty");
+        if(q.size() == 0) throw runtime_error("queue is empty");
         if(q.size() == 1) throw runtime_error("pointless use of Huffman algorithm");
         while(!q.empty()){
             if(q.size() == 1){
@@ -63,11 +62,13 @@ struct HuffmanEncoder{
         root = other.root; 
         message = other.message;
         other.root = nullptr;
+        return *this;
     }
     HuffmanEncoder& operator=(HuffmanEncoder&& other) {
         root = other.root;
         message = other.message;
         other.root = nullptr;
+        return *this;
     }
 
     ~HuffmanEncoder() {
@@ -99,14 +100,6 @@ struct HuffmanEncoder{
         }
     }
 
-    void show_table() const{
-
-    }
-
-    NodeHuffman* get_root(){
-        return root;
-    }
-
     string query(char c, NodeHuffman* current) const{
         if(current == nullptr) return "\0";
         if(current->c == c) return current->code;
@@ -126,21 +119,6 @@ struct HuffmanEncoder{
         writer.close();
     }
 
-    void encode_binary(string filepath) const{ // TODO: fix this method
-        const int chunk_size = 64;
-        vector<bitset<chunk_size>> bit_chunks;
-        for (int i = 0; i < message.length(); i += 64){
-            string chunk_str = message.substr(i, 64);
-            bit_chunks.emplace_back(bitset<chunk_size>(chunk_str));
-        }
-        ofstream outfile(filepath, ios::binary);
-        for (const auto &chunk : bit_chunks){
-            unsigned long long value = chunk.to_ullong();                   
-            outfile.write(reinterpret_cast<char *>(&value), sizeof(value)); 
-        }
-        outfile.close();
-    }
-
     string encoded_msg_string() const{
         string aux;
         for(auto c:message){
@@ -156,18 +134,9 @@ struct HuffmanEncoder{
             throw runtime_error("Could not write file");
         serialize_pre_order(root, writer);
         writer.close();
-        // writer.open(filepath2);
-        // if(!writer)
-        //     throw runtime_error("Could not write file");
-
-        // writer.close();
     }
 
     private:
-        
-        void show_table_single_node(NodeHuffman *node) const{
-
-        }
 
         void serialize_node(NodeHuffman* node, ofstream& writer) const{
             if(node->c=='\0') return;
@@ -287,9 +256,8 @@ struct HuffmanDecoder{
         else{
             throw runtime_error("nao foi possivel abrir o arquivo");
         }
-        NodeHuffman *root=enc.get_root(),*aux;
+        NodeHuffman *root=enc.root,*aux;
         aux=root;
-        int index=0;
         string::iterator it=line.begin();
         while(it!=line.end()){
             if(aux->c!='\0'){
@@ -315,14 +283,29 @@ atraves da ordem remonta o grafo de letras
 
 */
 
+string get_content(string filepath){
+    ifstream scanner;
+    scanner.open("mensagem.txt");
+    if (!scanner)
+        throw runtime_error("couldn't open file");
+    string s;
+    string aux;
+    while (getline(scanner, aux))
+    {
+        s += aux + '\n';
+    }
+    return s;
+}
+
 
 int main(){
-    string s = "The Zen of Python, by Tim Peters\n\nBeautiful is better than ugly.\nExplicit is better than implicit.\nSimple is better than complex.\nComplex is better than complicated.\nFlat is better than nested.\nSparse is better than dense.\nReadability counts.\nSpecial cases aren't special enough to break the rules.\n Although practicality beats purity.\nErrors should never pass silently.\nUnless explicitly silenced.\nIn the face of ambiguity, refuse the temptation to guess.\nThere should be one-- and preferably only one-- obvious way to do it.\nAlthough that way may not be obvious at first unless you're Dutch.\n Now is better than never.\nAlthough never is often better than * right * now.\nIf the implementation is hard to explain, it's a bad idea.\n If the implementation is easy to explain, it may be a good idea.\nNamespaces are one honking great idea-- let's do more of those!"; 
+    
+    string s = "The Zen of Python, by Tim Peters\n\nBeautiful is better than ugly.\nExplicit is better than implicit.\nSimple is better than complex.\nComplex is better than complicated.\nFlat is better than nested.\nSparse is better than dense.\nReadability counts.\nSpecial cases aren't special enough to break the rules.\nAlthough practicality beats purity.\nErrors should never pass silently.\nUnless explicitly silenced.\nIn the face of ambiguity, refuse the temptation to guess.\nThere should be one-- and preferably only one-- obvious way to do it.\nAlthough that way may not be obvious at first unless you're Dutch.\nNow is better than never.\nAlthough never is often better than * right * now.\nIf the implementation is hard to explain, it's a bad idea.\nIf the implementation is easy to explain, it may be a good idea.\nNamespaces are one honking great idea-- let's do more of those!"; 
     HuffmanPreprocessor alfa(s);
     HuffmanEncoder beta(alfa.frequencies, s);
     beta.encode_message("zenofpython.txt");
     beta.serialize_tree("tree.txt");
     HuffmanDecoder a("tree.txt","zenofpython.txt");
-    a.decoder("messagem.txt");
+    a.decoder("mensagem.txt");
     return 0;
 }
